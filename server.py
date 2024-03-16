@@ -24,7 +24,6 @@ logging.basicConfig(level=logging.INFO)
 # Когда он откажется купить слона,
 # то мы уберем одну подсказку. Как будто что-то меняется :)
 sessionStorage = {}
-animals = ['слон', 'кролик']
 
 
 @app.route('/post', methods=['POST'])
@@ -68,32 +67,41 @@ def handle_dialog(req, res):
                 "Не хочу.",
                 "Не буду.",
                 "Отстань!",
-            ],
-            'animal': 0
+            ]
         }
-
         # Заполняем текст ответа
-        res['response']['text'] = f"Привет! Купи {animals[sessionStorage[user_id]['animal']]}а!"
+        res['response']['text'] = 'Привет! Купи слона!'
         # Получим подсказки
         res['response']['buttons'] = get_suggests(user_id)
         return
 
-    for elem in ['ладно', 'куплю', 'покупаю', 'хорошо']:
-        if elem in req['request']['original_utterance'].lower():
-            if animals[sessionStorage[user_id]['animal']] == len(animals) - 1:
-                res['response']['text'] = f'{animals[sessionStorage[user_id]["animal"]].capitalize()}а можно найти на Яндекс.Маркете!'
-                sessionStorage[user_id]['animal'] += 1
-                res['response']['end_session'] = True
-                return
+    # Сюда дойдем только, если пользователь не новый,
+    # и разговор с Алисой уже был начат
+    # Обрабатываем ответ пользователя.
+    # В req['request']['original_utterance'] лежит весь текст,
+    # что нам прислал пользователь
+    # Если он написал 'ладно', 'куплю', 'покупаю', 'хорошо',
+    # то мы считаем, что пользователь согласился.
+    # Подумайте, всё ли в этом фрагменте написано "красиво"?
+    if req['request']['original_utterance'].lower() in [
+        'ладно',
+        'куплю',
+        'покупаю',
+        'хорошо'
+    ]:
+        # Пользователь согласился, прощаемся.
+        res['response']['text'] = 'Слона можно найти на Яндекс.Маркете!'
+        res['response']['end_session'] = True
+        return
 
-        # Если нет, то убеждаем его купить слона!
+    # Если нет, то убеждаем его купить слона!
     res['response']['text'] = \
-        f"Все говорят '{req['request']['original_utterance']}', а ты купи {animals[sessionStorage[user_id]['animal']]}а!"
-    res['response']['buttons'] = get_suggests(user_id, animals[sessionStorage[user_id]["animal"]])
+        f"Все говорят '{req['request']['original_utterance']}', а ты купи слона!"
+    res['response']['buttons'] = get_suggests(user_id)
 
 
 # Функция возвращает две подсказки для ответа.
-def get_suggests(user_id, animal):
+def get_suggests(user_id):
     session = sessionStorage[user_id]
 
     # Выбираем две первые подсказки из массива.
@@ -111,7 +119,7 @@ def get_suggests(user_id, animal):
     if len(suggests) < 2:
         suggests.append({
             "title": "Ладно",
-            "url": f"https://market.yandex.ru/search?text={animal}",
+            "url": "https://market.yandex.ru/search?text=слон",
             "hide": True
         })
 
